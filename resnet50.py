@@ -44,8 +44,8 @@ def main_resnet50():
 
     # 计算准确率
     accuracy = calculate_accuracy(model, val_loader)
-    print(f"ResNet50在ImageNet验证集上的准确率为: {accuracy * 100:.2f}%")
-    logging.info(f"ResNet50在ImageNet验证集上的准确率为: {accuracy * 100:.2f}%")
+    print(f"The accuracy of ResNet50 on the ImageNet validation set is: {accuracy * 100:.2f}%")
+    logging.info(f"The accuracy of ResNet50 on the ImageNet validation set is: {accuracy * 100:.2f}%")
 
 if __name__ == '__main__':
     main_resnet50()

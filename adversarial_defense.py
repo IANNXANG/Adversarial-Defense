@@ -53,8 +53,8 @@ def main_defense():
 
     # 计算带防御的准确率
     accuracy = calculate_accuracy_with_defense(model, val_loader)
-    print(f"ResNet50在对抗样本上的防御后准确率为: {accuracy * 100:.2f}%")
-    logging.info(f"ResNet50在对抗样本上的防御后准确率为: {accuracy * 100:.2f}%")
+    print(f"Accuracy of ResNet50 after defense on adversarial examples: {accuracy * 100:.2f}%")
+    logging.info(f"Accuracy of ResNet50 after defense on adversarial examples: {accuracy * 100:.2f}%")
 
 if __name__ == '__main__':
     main_defense()
