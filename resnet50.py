@@ -25,7 +25,7 @@ def main_resnet50():
 
     # 加载ImageNet验证集
     val_dataset = datasets.ImageFolder(root='ILSVRC2012_img_val_categories', transform=transform)
-    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
+    val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 
     # 定义函数来计算准确率
     def calculate_accuracy(model, dataloader):
