@@ -43,3 +43,4 @@ def calculate_accuracy(model, dataloader):
 # 计算准确率
 accuracy = calculate_accuracy(model, val_loader)
 print(f"ResNet50在ImageNet验证集上的准确率为: {accuracy * 100:.2f}%")
+logging.info(f"ResNet50在ImageNet验证集上的准确率为: {accuracy * 100:.2f}%")
