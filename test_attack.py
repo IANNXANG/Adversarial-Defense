@@ -17,14 +17,12 @@ model.eval()  # 设置为评估模式
 
 # 定义数据转换
 transform = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
 # 加载ImageNet验证集
-val_dataset = datasets.ImageFolder(root='adversarial_samples', transform=transform)
+val_dataset = datasets.ImageFolder(root='fgsm_images', transform=transform)
 val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 
 # 定义函数来计算准确率
