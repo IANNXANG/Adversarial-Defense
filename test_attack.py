@@ -7,7 +7,7 @@ import logging
 def main_attack_test():
     # 配置日志记录
     logging.basicConfig(filename='accuracy_attack.log', level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+                        format='%(asctime)s - %(levelname)s - %(message)s', encoding='utf-8')
 
     # 加载预训练的ResNet50模型
     model = models.resnet50(pretrained=True)
