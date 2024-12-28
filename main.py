@@ -3,6 +3,7 @@ from adversarial_attack import main_attack
 from adversarial_defense import main_defense
 from test_attack import main_attack_test
 
+
 if __name__ == '__main__':
     main_resnet50()  #计算原始准确率
     #main_attack()  #生成对抗样本
