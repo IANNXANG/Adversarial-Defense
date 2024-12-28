@@ -47,8 +47,8 @@ def main_defense():
                 _, predicted = torch.max(output.data, 1)
                 total += target.size(0)
                 correct += (predicted == target).sum().item()
-                print(f"batch {i + 1}, 准确率: {correct / total * 100:.2f}%")
-                logging.info(f"batch {i + 1}, 准确率: {correct / total * 100:.2f}%")
+                print(f"batch {i + 1}, accuracy: {correct / total * 100:.2f}%")
+                logging.info(f"batch {i + 1}, accuracy: {correct / total * 100:.2f}%")
         return correct / total
 
     # 计算带防御的准确率
