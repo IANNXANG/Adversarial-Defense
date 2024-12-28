@@ -1,24 +1,20 @@
 import torch
+import torch.nn.functional as F
 from torchvision import models, transforms, datasets
 from torch.utils.data import DataLoader
-from torch.nn.functional import cross_entropy
 from PIL import Image
-import numpy as np
 import os
-from tqdm import tqdm
 import logging
 
 # 配置日志记录
 logging.basicConfig(filename='fgsm_attack.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-# 设置设备
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 # 加载预训练的ResNet50模型
 model = models.resnet50(pretrained=True)
-model.to(device)
-model.eval()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)  # 将模型移动到设备上
+model.eval()  # 设置为评估模式
 
 # 定义数据转换
 transform = transforms.Compose([
@@ -32,58 +28,65 @@ transform = transforms.Compose([
 val_dataset = datasets.ImageFolder(root='ILSVRC2012_img_val_categories', transform=transform)
 val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
+# 创建输出目录以保存对抗样本
+output_dir = 'path_to_save_fgsm_images'
+os.makedirs(output_dir, exist_ok=True)
 
-# 定义FGSM攻击函数
+
+def save_image(tensor, path):
+    """Helper function to save a tensor as an image file."""
+    unnormalize = transforms.Normalize(
+        mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.225],
+        std=[1 / 0.229, 1 / 0.224, 1 / 0.225]
+    )
+    img = unnormalize(tensor).clamp(0, 1)
+    img = transforms.ToPILImage()(img.cpu())
+    img.save(path)
+
+
 def fgsm_attack(image, epsilon, data_grad):
-    # 获取梯度符号
+    """Create adversarial example using FGSM"""
     sign_data_grad = data_grad.sign()
-    # 创建对抗样本
     perturbed_image = image + epsilon * sign_data_grad
-    # 将像素值限制在[0,1]范围内
     perturbed_image = torch.clamp(perturbed_image, 0, 1)
     return perturbed_image
 
 
-# 对抗样本生成与保存
-epsilon = 0.01  # 扰动强度，可以根据需求调整
-save_dir = 'adversarial_examples'
-if not os.path.exists(save_dir):
-    os.makedirs(save_dir)
+def generate_adversarial_example(model, device, dataloader, epsilon):
+    for i, (data, target) in enumerate(dataloader):
+        data, target = data.to(device), target.to(device)
 
-for images, labels in tqdm(val_loader, desc="Creating adversarial examples"):
-    images, labels = images.to(device), labels.to(device)
+        data.requires_grad = True
 
-    images.requires_grad = True
+        output = model(data)
+        init_pred = output.max(1, keepdim=True)[1]
 
-    outputs = model(images)
-    loss = cross_entropy(outputs, labels)
+        if init_pred.item() != target.item():
+            continue
 
-    model.zero_grad()
-    loss.backward()
+        loss = F.cross_entropy(output, target)
+        model.zero_grad()
+        loss.backward()
+        data_grad = data.grad.data
 
-    data_grad = images.grad.data
-    perturbed_images = fgsm_attack(images, epsilon, data_grad)
+        perturbed_data = fgsm_attack(data, epsilon, data_grad)
 
-    for i in range(len(labels)):
-        adv_image = perturbed_images[i].detach().cpu().numpy()
-        adv_image = np.transpose(adv_image, (1, 2, 0))
-        adv_image = adv_image * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
-        adv_image = np.clip(adv_image, 0, 1)
+        final_pred = model(perturbed_data).max(1, keepdim=True)[1]
 
-        original_path = val_loader.dataset.samples[val_loader.batch_sampler.sampler.indices[i]][0]
-        adv_image_pil = Image.fromarray((adv_image * 255).astype(np.uint8))
+        if final_pred.item() == target.item():
+            continue
 
-        # 恢复原始分辨率
-        original_image = Image.open(original_path)
-        adv_image_resized = adv_image_pil.resize(original_image.size, Image.ANTIALIAS)
+        class_folder = os.path.join(output_dir, str(target.item()))
+        os.makedirs(class_folder, exist_ok=True)
+        image_path = os.path.join(class_folder, f"{i}.png")
+        save_image(perturbed_data.squeeze(), image_path)
+        logging.info(f"Saved {image_path} with epsilon={epsilon}")
 
-        # 构建保存路径
-        filename = os.path.basename(original_path)
-        save_path = os.path.join(save_dir, filename)
 
-        # 以高质量保存图片
-        adv_image_resized.save(save_path, quality=95)
+# 设定扰动大小（epsilon）
+epsilon = 0.01  # 这是一个非常小的值，可以根据需要调整
 
-        logging.info(f"Saved adversarial example: {filename}")
+# 生成对抗样本
+generate_adversarial_example(model, device, val_loader, epsilon)
 
-print("Adversarial example creation completed.")
+print('Adversarial samples generation complete.')
